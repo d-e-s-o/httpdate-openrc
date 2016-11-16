@@ -40,7 +40,7 @@ start() {
   httpdate="$(wget -S -O /dev/null google.com 2>&1 | sed -n -e 's/  *Date: *//p' -eT -eq)"
   if [ $? -a ! -z "$httpdate" ]
   then
-    date --set="$httpdate" > /dev/null
+    /bin/date --set="$httpdate" > /dev/null
     eend ${?}
   else
     eerror "Failed to retrieve current time"
