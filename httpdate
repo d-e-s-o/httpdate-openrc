@@ -1,7 +1,7 @@
 #!/sbin/openrc-run
 #
 #/***************************************************************************
-# *   Copyright (C) 2014,2016 Daniel Mueller (deso@posteo.net)              *
+# *   Copyright (C) 2014,2016,2018 Daniel Mueller (deso@posteo.net)         *
 # *                                                                         *
 # *   This program is free software: you can redistribute it and/or modify  *
 # *   it under the terms of the GNU General Public License as published by  *
@@ -23,6 +23,16 @@ depend() {
   after dns dhcpcd net ntpdate
 }
 
+sync_time() {
+  httpdate="$(wget --server-response --output-document=/dev/null google.com 2>&1 | sed -n -e 's/  *Date: *//p' -eT -eq)"
+  if [ $? -a ! -z "$httpdate" ]
+  then
+    /bin/date --set="$httpdate" > /dev/null
+  else
+    false
+  fi
+}
+
 start() {
   if [ -x /etc/init.d/ntpdate ]
   then
@@ -37,13 +47,14 @@ start() {
   fi
 
   ebegin "Syncing time"
-  httpdate="$(wget --server-response --output-document=/dev/null google.com 2>&1 | sed -n -e 's/  *Date: *//p' -eT -eq)"
-  if [ $? -a ! -z "$httpdate" ]
-  then
-    /bin/date --set="$httpdate" > /dev/null
-    eend ${?}
-  else
-    eerror "Failed to retrieve current time"
-    eend 1
-  fi
+  for i in $(seq 1 5); do
+    sync_time
+    if [ $? -eq 0 ]; then
+      eend 0
+      break
+    fi
+
+    einfo "Failed to retrieve current time. Retrying ($i/5) ..."
+    sleep 3
+  done
 }
