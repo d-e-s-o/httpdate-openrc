@@ -24,7 +24,7 @@ depend() {
 }
 
 sync_time() {
-  httpdate="$(wget --server-response --output-document=/dev/null google.com 2>&1 | sed -n -e 's/  *Date: *//p' -eT -eq)"
+  httpdate="$(curl --silent --head --no-styled-output google.com | sed -n -e 's/Date: *//p' -eT -eq)"
   if [ $? -a ! -z "$httpdate" ]
   then
     # The date is supposed to follow RFC 1123, which basically mandates
